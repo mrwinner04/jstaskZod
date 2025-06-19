@@ -2,7 +2,7 @@ import { UIManager } from "./ui/ui-manager.js";
 import { Logger } from "./utils/logger.js";
 
 /**
- * Main application class - entry point
+ * Main application class - entry points
  */
 class WeatherApp {
   private uiManager: UIManager;
