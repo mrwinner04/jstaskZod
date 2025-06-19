@@ -1,6 +1,6 @@
 import { UserWeatherData } from "./ui.types.js";
 import { WeatherData } from "../services/weather.types.js";
-import { User } from "../services/user.types.js";
+import { User } from "../services/user.schemas.js";
 import { UserService } from "../services/user-service.js";
 import { WeatherService } from "../services/weather-service.js";
 import { UserWeatherConverter } from "../converters/user-weather-converter.js";
@@ -144,7 +144,7 @@ export class UIManager {
           this.currentUserData.push(userWeatherData);
           await this.addUserCard(userWeatherData);
         } catch (error) {
-          Logger.error("Error processing user:", error);
+          Logger.error("Error processing user:", error as Error);
           const fallbackData: UserWeatherData = {
             user,
             weather: null,
@@ -160,7 +160,7 @@ export class UIManager {
       // Start auto-refresh
       this.autoRefreshManager.start();
     } catch (error) {
-      Logger.error("Error fetching users:", error);
+      Logger.error("Error fetching users:", error as Error);
       this.showError("Failed to fetch users. Please try again.");
     }
   }
@@ -226,7 +226,7 @@ export class UIManager {
             }`
           );
         } catch (error) {
-          Logger.error("Error refreshing weather for card:", error);
+          Logger.error("Error refreshing weather for card:", error as Error);
           UserCardRenderer.updateWeatherInfo(card, null);
           weatherDataArray.push(null);
         }
@@ -244,7 +244,7 @@ export class UIManager {
         Logger.info("⏰ Auto-refresh completed");
       }
     } catch (error) {
-      Logger.error("Error in refreshWeather:", error);
+      Logger.error("Error in refreshWeather:", error as Error);
       if (!isAutoRefresh) {
         this.showError("Failed to refresh weather data. Please try again.");
       }

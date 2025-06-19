@@ -20,7 +20,7 @@ export class CacheManager {
       const item = localStorage.getItem(key);
       return item ? JSON.parse(item) : null;
     } catch (error) {
-      Logger.error(`Error getting item from cache: ${key}`, error);
+      Logger.error(`Error getting item from cache: ${key}`, error as Error);
       return null;
     }
   }
@@ -32,7 +32,7 @@ export class CacheManager {
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
-      Logger.error(`Error setting item in cache: ${key}`, error);
+      Logger.error(`Error setting item in cache: ${key}`, error as Error);
     }
   }
 
@@ -43,7 +43,7 @@ export class CacheManager {
     try {
       localStorage.removeItem(key);
     } catch (error) {
-      Logger.error(`Error removing item from cache: ${key}`, error);
+      Logger.error(`Error removing item from cache: ${key}`, error as Error);
     }
   }
 
@@ -69,7 +69,7 @@ export class CacheManager {
       });
       Logger.info("Cache cleared successfully");
     } catch (error) {
-      Logger.error("Error clearing cache", error);
+      Logger.error("Error clearing cache", error as Error);
     }
   }
 }

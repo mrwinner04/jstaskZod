@@ -4,24 +4,26 @@
 export class Logger {
   private static readonly LOG_PREFIX = "🌤️ Weather App:";
 
-  static info(message: string, context?: unknown): void {
-    console.log(`${this.LOG_PREFIX} ℹ️ ${message}`, context || "");
+  static info(message: string, context?: object | string | number): void {
+    console.log(`${this.LOG_PREFIX} ℹ️ ${message}`, context ? context : "");
   }
 
-  static success(message: string, context?: unknown): void {
-    console.log(`${this.LOG_PREFIX} ✅ ${message}`, context || "");
+  static success(message: string, context?: object | string | number): void {
+    console.log(`${this.LOG_PREFIX} ✅ ${message}`, context ? context : "");
   }
 
-  static warn(message: string, context?: unknown): void {
-    console.warn(`${this.LOG_PREFIX} ⚠️ ${message}`, context || "");
+  static warn(message: string, context?: object | string | number): void {
+    console.warn(`${this.LOG_PREFIX} ⚠️ ${message}`, context ? context : "");
   }
 
-  static error(message: string, error?: unknown): void {
-    console.error(`${this.LOG_PREFIX} ❌ ${message}`, error || "");
+  static error(message: string, error?: Error | string | object): void {
+    console.error(`${this.LOG_PREFIX} ❌ ${message}`, error ? error : "");
   }
 
   static weatherRefresh(lat: number, lng: number): void {
-    this.info(`Fetching weather for coordinates: ${lat}, ${lng}`);
+    console.log(
+      `${this.LOG_PREFIX} [WEATHER] Refreshing weather for coordinates: ${lat}, ${lng}`
+    );
   }
 
   static summary(successCount: number, totalCount: number): void {

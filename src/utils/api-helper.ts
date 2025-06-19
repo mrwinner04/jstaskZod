@@ -1,37 +1,42 @@
 import { Logger } from "./logger.js";
 
-/**
- * Helper class for API operations
- */
 export class APIHelper {
   /**
-   * Fetch data from API with error handling
+   * Fetch data from API with error handling and type safety
    */
-  static async fetchData<T>(url: string, errorMessage: string): Promise<T> {
+  static async fetchData<T>(
+    url: string,
+    errorMessage: string = "Failed to fetch data"
+  ): Promise<T> {
     try {
       const response = await fetch(url);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorDetails = `HTTP ${response.status}: ${response.statusText}`;
+        Logger.error(`${errorMessage} - ${errorDetails}`);
+        throw new Error(`${errorMessage}: ${errorDetails}`);
       }
 
       const data = await response.json();
       return data as T;
     } catch (error) {
-      Logger.error(errorMessage, error);
-      throw error;
+      const errorInstance =
+        error instanceof Error ? error : new Error(String(error));
+      Logger.error(`${errorMessage}:`, errorInstance.message);
+      throw errorInstance;
     }
   }
 
   /**
-   * Validate API response data
+   * Validate data with a custom validation function
    */
   static validateData<T>(
     data: T,
     validator: (data: T) => boolean,
-    errorMessage: string
+    errorMessage: string = "Data validation failed"
   ): void {
     if (!validator(data)) {
+      Logger.error(errorMessage);
       throw new Error(errorMessage);
     }
   }
@@ -40,14 +45,15 @@ export class APIHelper {
    * Handle API errors with retry logic
    */
   static async handleApiError(
-    error: unknown,
+    error: Error | string,
     retryCount: number
   ): Promise<void> {
     if (retryCount > 0) {
       const delay = Math.min(1000 * Math.pow(2, 3 - retryCount), 5000);
+      const errorMessage = error instanceof Error ? error.message : error;
       Logger.warn(
         `Retrying in ${delay}ms... (${retryCount} attempts remaining)`,
-        error
+        errorMessage
       );
       await new Promise((resolve) => setTimeout(resolve, delay));
     } else {

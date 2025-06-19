@@ -1,14 +1,22 @@
 import { UserWeatherData } from "./ui.types.js";
 import { WeatherData } from "../services/weather.types.js";
-import { User, UserUtils } from "../services/user.types.js";
+import {
+  User,
+  validateUser,
+  getFullName,
+  getLocationDisplay,
+  getLocationQuery,
+} from "../services/user.schemas.js";
 import { GeocodingService } from "../services/geocoding-service.js";
+import { Logger } from "../utils/logger.js";
+import { ZodError } from "zod";
 
 /**
- * Handles rendering of user cards in the UI
+ * Renderer for user cards with Zod validation
  */
 export class UserCardRenderer {
   /**
-   * Create a user card element with weather information
+   * Create a user card element with weather information and validated data
    */
   static async createUserCard(
     userWeatherData: UserWeatherData
@@ -17,41 +25,86 @@ export class UserCardRenderer {
     card.className = "user-card";
 
     try {
-      // Get coordinates using the dedicated geocoding service
-      const locationQuery = UserUtils.getLocationQuery(userWeatherData.user);
+      // Validate user data before rendering
+      const validatedUser = validateUser(userWeatherData.user);
+
+      // Get coordinates using the geocoding service
+      const locationQuery = getLocationQuery(validatedUser);
       const geocodingResult = await GeocodingService.getCoordinates(
         locationQuery
       );
 
+      // Store coordinates as data attributes
       card.dataset.lat = geocodingResult.lat.toString();
       card.dataset.lng = geocodingResult.lng.toString();
     } catch (error) {
-      console.error("Failed to get coordinates for user card:", error);
-      // Set fallback coordinates (will cause weather refresh to fail gracefully)
+      if (error instanceof ZodError) {
+        Logger.error(
+          `❌ User validation failed for card creation:`,
+          error.message
+        );
+      } else {
+        Logger.error(
+          `❌ Failed to get coordinates for user card:`,
+          error as Error
+        );
+      }
+
+      // Set fallback coordinates
       card.dataset.lat = "0";
       card.dataset.lng = "0";
     }
 
-    card.innerHTML = `
-      <div class="user-card__header">
-        <img 
-          src="${userWeatherData.user.picture.large}" 
-          alt="User avatar" 
-          class="user-card__avatar"
-        >
-        <h2 class="user-card__name">${UserUtils.getFullName(
-          userWeatherData.user
-        )}</h2>
-        <div class="user-card__location">${UserUtils.getLocationDisplay(
-          userWeatherData.user
-        )}</div>
-      </div>
-      <div class="user-card__weather">
-        ${this.renderWeatherInfo(userWeatherData.weather)}
-      </div>
-    `;
-
+    // Render the card content
+    card.innerHTML = this.renderCardContent(userWeatherData);
     return card;
+  }
+
+  /**
+   * Render the HTML content for a user card
+   */
+  private static renderCardContent(userWeatherData: UserWeatherData): string {
+    try {
+      // Validate user data before accessing properties
+      const validatedUser = validateUser(userWeatherData.user);
+
+      return `
+        <div class="user-card__header">
+          <img 
+            src="${validatedUser.picture.large}" 
+            alt="Avatar for ${getFullName(validatedUser)}" 
+            class="user-card__avatar"
+          >
+          <h2 class="user-card__name">${getFullName(validatedUser)}</h2>
+          <div class="user-card__location">${getLocationDisplay(
+            validatedUser
+          )}</div>
+        </div>
+        <div class="user-card__weather">
+          ${this.renderWeatherInfo(userWeatherData.weather)}
+        </div>
+      `;
+    } catch (error) {
+      if (error instanceof ZodError) {
+        Logger.error(
+          `❌ User validation failed during card content rendering:`,
+          error.message
+        );
+      }
+
+      return `
+        <div class="user-card__header user-card__error">
+          <div class="user-card__error-icon">⚠️</div>
+          <h2 class="user-card__name">Error</h2>
+          <div class="user-card__location">Invalid user data</div>
+        </div>
+        <div class="user-card__weather">
+          <div class="weather-info weather-error">
+            <div class="weather-message">Unable to load user data</div>
+          </div>
+        </div>
+      `;
+    }
   }
 
   /**
@@ -80,7 +133,6 @@ export class UserCardRenderer {
     }
 
     const staleClass = weather.stale ? "weather-stale" : "";
-    const staleWarning = weather.stale ? " ⚠️ Stale data" : "";
 
     return `
       <div class="weather-info ${staleClass}">
@@ -89,7 +141,7 @@ export class UserCardRenderer {
         <div class="weather-humidity">Humidity: ${weather.humidity}%</div>
         ${
           weather.stale
-            ? '<div class="weather-warning">Using cached data</div>'
+            ? '<div class="weather-warning">⚠️ Using cached data</div>'
             : ""
         }
       </div>

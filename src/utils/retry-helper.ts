@@ -1,5 +1,10 @@
-import { RetryConfig } from "./utils.types.js";
 import { Logger } from "./logger.js";
+
+interface RetryOptions {
+  maxAttempts: number;
+  baseDelay: number;
+  maxDelay: number;
+}
 
 /**
  * Helper class for implementing retry logic
@@ -9,33 +14,40 @@ export class RetryHelper {
    * Retry an API call with exponential backoff
    */
   static async retryApiCall<T>(
-    apiCall: () => Promise<T>,
-    config: RetryConfig,
-    context: string
+    operation: () => Promise<T>,
+    options: RetryOptions,
+    operationName: string
   ): Promise<T> {
-    let lastError: unknown;
-    let attempts = 0;
+    const { maxAttempts, baseDelay, maxDelay } = options;
+    let lastError: Error = new Error("Unknown error");
 
-    while (attempts < config.maxAttempts) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        attempts++;
-        Logger.info(`${context} - Attempt ${attempts}/${config.maxAttempts}`);
-        return await apiCall();
+        return await operation();
       } catch (error) {
-        lastError = error;
-        Logger.warn(`${context} - Attempt ${attempts} failed`, error);
+        lastError = error instanceof Error ? error : new Error(String(error));
 
-        if (attempts < config.maxAttempts) {
-          const delay = Math.min(
-            config.baseDelay * Math.pow(2, attempts - 1),
-            config.maxDelay || Infinity
+        if (attempt === maxAttempts) {
+          Logger.error(
+            `${operationName} failed after ${maxAttempts} attempts`,
+            lastError.message
           );
-          await new Promise((resolve) => setTimeout(resolve, delay));
+          throw lastError;
         }
+
+        const delay = Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay);
+        Logger.warn(
+          `${operationName} attempt ${attempt} failed, retrying in ${delay}ms`,
+          lastError.message
+        );
+        await this.delay(delay);
       }
     }
 
-    Logger.error(`${context} - All attempts failed`, lastError);
     throw lastError;
+  }
+
+  private static delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

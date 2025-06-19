@@ -1,34 +1,48 @@
-import { User, UserUtils } from "../services/user.types.js";
+import {
+  User,
+  validateUser,
+  getLocationQuery,
+} from "../services/user.schemas.js";
 import { WeatherService } from "../services/weather-service.js";
 import { GeocodingService } from "../services/geocoding-service.js";
 import { UserWeatherData } from "../ui/ui.types.js";
 import { Logger } from "../utils/logger.js";
+import { ZodError } from "zod";
 
 export class UserWeatherConverter {
-  /**
-   * Convert a user to user-weather data by fetching weather for their location
-   */
   static async convertUserToUserWeatherData(
     user: User
   ): Promise<UserWeatherData> {
     try {
-      // Get coordinates using the geocoding service
-      const locationQuery = UserUtils.getLocationQuery(user);
+      const validatedUser = validateUser(user);
+      const locationQuery = getLocationQuery(validatedUser);
       const geocodingResult = await GeocodingService.getCoordinates(
         locationQuery
       );
-
       const weather = await WeatherService.getCurrentWeather(
         geocodingResult.lat,
         geocodingResult.lng
       );
 
       return {
-        user,
+        user: validatedUser,
         weather,
       };
     } catch (error) {
-      Logger.error("Error converting user to user-weather data:", error);
+      if (error instanceof ZodError) {
+        Logger.error(
+          `❌ User validation failed during conversion:`,
+          error.message
+        );
+      } else {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        Logger.error(
+          `❌ Error converting user to user-weather data:`,
+          errorMessage
+        );
+      }
+
       return {
         user,
         weather: null,

@@ -74,7 +74,7 @@ export class WeatherService {
     } catch (error) {
       Logger.warn(
         `Weather API failed, using fallback data for ${lat}, ${lng}`,
-        error
+        error as Error
       );
 
       if (fallbackData && this.isWeatherDataFresh(fallbackData)) {
@@ -86,7 +86,7 @@ export class WeatherService {
         );
         return { ...fallbackData, stale: true };
       } else {
-        Logger.error("No fallback weather data available", error);
+        Logger.error("No fallback weather data available", error as Error);
         throw error;
       }
     }
