@@ -1,0 +1,29 @@
+{
+  "name": "tstaskweather",
+  "version": "1.0.0",
+  "description": "TypeScript version of the weather task application",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "build": "vite build",
+    "dev": "vite",
+    "watch": "tsc -w",
+    "clean": "rimraf dist",
+    "prebuild": "npm run clean",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@types/node": "^20.19.1",
+    "http-server": "^14.1.1",
+    "rimraf": "^5.0.10",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.3.3",
+    "vite": "^6.3.5"
+  }
+}
